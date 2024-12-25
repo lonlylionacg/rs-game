@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>vada pov</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #70c5ce;
+        }
+        canvas {
+            display: block;
+            border: 1px solid #000;
+            background-color: #70c5ce;
+        }
+        .replay-btn {
+            display: none;
+            position: absolute;
+            background-color: green;
+            color: white;
+            font-size: 20px;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+        }
+        .score {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 30px;
+            color: black;
+            z-index: 10;
+        }
+        .popup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%;
+            max-width: 600px;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 20;
+            text-align: center;
+        }
+        .popup img {
+            width: 100%;
+            max-width: 500px;
+            margin-top: 20px;
+        }
+        .popup .message {
+            font-size: 30px;
+            color: red;
+            margin-bottom: 30px;
+        }
+        .jump-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background-color: #ff5722;
+            color: white;
+            font-size: 20px;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            z-index: 10;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .score {
+                font-size: 20px;
+            }
+            .replay-btn {
+                font-size: 16px;
+                padding: 8px;
+            }
+            .jump-btn {
+                font-size: 16px;
+                padding: 8px;
+            }
+            .popup {
+                width: 90%;
+                padding: 20px;
+            }
+            .popup .message {
+                font-size: 20px;
+            }
+        }
+        @media (max-width: 480px) {
+            .score {
+                font-size: 16px;
+            }
+            .replay-btn {
+                font-size: 14px;
+                padding: 6px;
+            }
+            .jump-btn {
+                font-size: 14px;
+                padding: 6px;
+            }
+            .popup {
+                width: 95%;
+                padding: 15px;
+            }
+            .popup .message {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="gameCanvas"></canvas>
+<button id="replayBtn" class="replay-btn">Replay</button>
+<button id="jumpBtn" class="jump-btn">Jump</button>
+<div class="score" id="score">Score: 0</div>
+
+<div class="popup" id="popup">
+    <div class="message">WELL DON YOU HAVE SUCCESSFULLY WON VADA POV FOR ROHIT</div>
+    <img id="popupImage" src="vpi.jpg" alt="Celebration Image">
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const replayBtn = document.getElementById('replayBtn');
+    const jumpBtn = document.getElementById('jumpBtn');
+    const scoreDiv = document.getElementById('score');
+    const popup = document.getElementById('popup');
+    const popupImage = document.getElementById('popupImage');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const birdImage = new Image();
+    birdImage.src = 'rs.png';
+    const tubeImage = new Image();
+    tubeImage.src = 'vp.png';
+
+    const bird = {
+        x: 50,
+        y: canvas.height / 2,
+        width: 50,
+        height: 50,
+        velocity: 0,
+        gravity: 0.6,
+        lift: -5,
+    };
+
+    const tubes = [];
+    let score = 0;
+    let gameOver = false;
+    let completedTubes = 0;
+
+    function createTube() {
+        const tubeHeight = Math.floor(Math.random() * (canvas.height / 2)) + 100;
+        const tubeGap = 300;
+        tubes.push({
+            x: canvas.width,
+            top: tubeHeight,
+            bottom: tubeHeight + tubeGap,
+            width: 80,
+            speed: 4,
+        });
+    }
+
+    function updateGameArea() {
+        if (gameOver) return;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        bird.velocity += bird.gravity;
+        bird.y += bird.velocity;
+
+        if (bird.y + bird.height > canvas.height || bird.y < 0) {
+            gameOver = true;
+            showReplayButton();
+        }
+
+        ctx.drawImage(birdImage, bird.x, bird.y, bird.width, bird.height);
+
+        for (let i = tubes.length - 1; i >= 0; i--) {
+            let tube = tubes[i];
+            tube.x -= tube.speed;
+
+            if (bird.x + bird.width > tube.x && bird.x < tube.x + tube.width) {
+                if (bird.y < tube.top || bird.y + bird.height > tube.bottom) {
+                    gameOver = true;
+                    showReplayButton();
+                }
+            }
+
+            if (tube.x + tube.width < 0) {
+                tubes.splice(i, 1);
+                score++;
+                completedTubes++;
+            } else {
+                ctx.drawImage(tubeImage, tube.x, 0, tube.width, tube.top);
+                ctx.drawImage(tubeImage, tube.x, tube.bottom, tube.width, canvas.height - tube.bottom);
+            }
+        }
+
+        if (completedTubes === 9) {
+            gameOver = true;
+            showPopup();
+        }
+
+        if (tubes.length === 0 || tubes[tubes.length - 1].x < canvas.width - 300) {
+            createTube();
+        }
+
+        scoreDiv.textContent = 'Score: ' + score;
+        requestAnimationFrame(updateGameArea);
+    }
+
+    function jump() {
+        if (gameOver) return;
+        bird.velocity = bird.lift;
+    }
+
+    function showReplayButton() {
+        replayBtn.style.display = 'block';
+    }
+
+    function restartGame() {
+        bird.y = canvas.height / 2;
+        bird.velocity = 0;
+        tubes.length = 0;
+        score = 0;
+        completedTubes = 0;
+        gameOver = false;
+        replayBtn.style.display = 'none';
+        popup.style.display = 'none';
+        updateGameArea();
+    }
+
+    function showPopup() {
+        popup.style.display = 'block';
+    }
+
+    replayBtn.addEventListener('click', restartGame);
+    jumpBtn.addEventListener('click', jump);
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') {
+            jump();
+        }
+    });
+
+    birdImage.onload = () => {
+        tubeImage.onload = () => {
+            updateGameArea();
+        };
+    };
+
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+</script>
+
+</body>
+</html>
